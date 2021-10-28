@@ -1,6 +1,5 @@
-from ticket_search.parser import init_parser
-from ticket_search.core import SearchEngine
-from ticket_search.helpers import load_data
+from trip_search.core import SearchEngine
+from trip_search.helpers import load_data, init_parser
 
 
 if __name__ == '__main__':
@@ -10,3 +9,5 @@ if __name__ == '__main__':
 
     flights = load_data(args.data)
     engine = SearchEngine(flights, **vars(args))
+    engine.search()
+    print(engine.get_output())

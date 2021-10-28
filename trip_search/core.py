@@ -49,8 +49,29 @@ class Trip:
         return json.dumps(self, default=lambda f: f.__dict__, indent=4)
 
 
-class SearchEngine:
+# aka node in FlightGraph
+class Airport:
     def __init__(self, flights) -> None:
+        self.flights = flights
+
+
+class FlightGraph:
+    def __init__(self, flights: list[Flight]) -> None:
+        self.flights = flights
+    # Need to somehow construct graph of possible routes
+    # nodes - airports
+    # edges - flights
+
+    # TODO find all possible routes without repeating airport
+    # (result sequence of flights)
+    def get_routes(self, origin, destination):
+        pass
+
+    pass
+
+
+class SearchEngine:
+    def __init__(self, flightgraph) -> None:
         pass
 
     def search(self, origin, destination, bags, return_requested,
@@ -59,5 +80,5 @@ class SearchEngine:
         pass
         self.output = []
 
-    def get_output(self):
-        pass
+    def get_output(self) -> str:
+        return ''
