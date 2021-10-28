@@ -1,6 +1,7 @@
 from core import Flight
 
 import argparse
+import csv
 
 
 def init_parser() -> argparse.ArgumentParser:
@@ -24,7 +25,7 @@ def init_parser() -> argparse.ArgumentParser:
                         help='Maximal number of stops for trip. If return is specified, this number is also applied to return journey.')
     parser.add_argument('--exclude', required=False,
                         help='Airports to exclude from trip.')
-    # add stopover - default from assignment should not be less than 1 hour and more than 6 hours
+    # add stopover limit - default from assignment should not be less than 1 hour and more than 6 hours
     # add limit to days for traveling
     # add time from limit flights (flight not earlier than)
 

@@ -1,5 +1,4 @@
 import json
-import csv
 from datetime import datetime
 
 
@@ -49,36 +48,32 @@ class Trip:
         return json.dumps(self, default=lambda f: f.__dict__, indent=4)
 
 
-# aka node in FlightGraph
+# AKA node in graph
 class Airport:
-    def __init__(self, flights) -> None:
+    def __init__(self, code, flights) -> None:
+        self.code = code
         self.flights = flights
-
-
-class FlightGraph:
-    def __init__(self, flights: list[Flight]) -> None:
-        self.flights = flights
-    # Need to somehow construct graph of possible routes
-    # nodes - airports
-    # edges - flights
-
-    # TODO find all possible routes without repeating airport
-    # (result sequence of flights)
-    def get_routes(self, origin, destination):
-        pass
-
-    pass
 
 
 class SearchEngine:
-    def __init__(self, flightgraph) -> None:
-        pass
+    def __init__(self, flights: list[Flight]) -> None:
+        self.flights = flights
+        self.graph = self._construct_graph(flights)
+        self.output = ''
 
+    # Need to somehow construct graph of possible routes
+    # nodes - airports
+    # edges - flights
+    def _construct_graph(self, flights, origin):
+        pass
+        # return origin Airport
+
+    # TODO find all possible routes without repeating airport
+    # (result sequences of flights)
     def search(self, origin, destination, bags, return_requested,
                max_trip_price, max_bag_price, passengers, max_stops,
                exclude):
         pass
-        self.output = []
 
     def get_output(self) -> str:
         return ''
