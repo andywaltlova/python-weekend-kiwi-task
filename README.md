@@ -1,5 +1,7 @@
 # How to run my solution?
 
-# Addition features and sources
+## CLI help
 
-- validation for airport code
+```bash
+# TODO snippet
+```
