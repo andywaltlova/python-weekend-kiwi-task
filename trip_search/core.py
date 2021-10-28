@@ -57,23 +57,22 @@ class Airport:
 
 class SearchEngine:
     def __init__(self, flights: list[Flight]) -> None:
-        self.flights = flights
-        self.graph = self._construct_graph(flights)
-        self.output = ''
+        self.data = flights
+        self.last_output = ''
 
     # Need to somehow construct graph of possible routes
-    # nodes - airports
-    # edges - flights
-    def _construct_graph(self, flights, origin):
+    # nodes - airports, edges - flights
+    def _construct_routes(self, origin):
         pass
-        # return origin Airport
+        # set graph to origin Airport
 
-    # TODO find all possible routes without repeating airport
-    # (result sequences of flights)
+    # TODO find all possible routes from origin
+    # (result sequences of flights -> Trips)
     def search(self, origin, destination, bags, return_requested,
                max_trip_price, max_bag_price, passengers, max_stops,
-               exclude):
+               exclude) -> list[Trip]:
+        self._construct_routes(origin)
         pass
 
     def get_output(self) -> str:
-        return ''
+        return self.last_output

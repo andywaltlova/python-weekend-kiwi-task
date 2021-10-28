@@ -4,7 +4,24 @@ import argparse
 import csv
 
 
+class InvalidFlightDataError(Exception):
+    """Exception raised for errors in the input dataset.
+
+    Attributes:
+        line -- line that caused error
+    """
+
+    def __init__(self, line):
+        super().__init__(f'Missing or invalid value on line {line}.')
+
+
+def load_data(paths: list[str]) -> list[Flight]:
+    # TODO
+    return []
+
+
 def init_parser() -> argparse.ArgumentParser:
+    # TODO make data and exclude lists
     parser = argparse.ArgumentParser(description='Process csv with flighs.')
     parser.add_argument('data', type=str,
                         help='Name(s) or path(s) to dataset(s) with available flights.')
@@ -30,19 +47,3 @@ def init_parser() -> argparse.ArgumentParser:
     # add time from limit flights (flight not earlier than)
 
     return parser
-
-
-class InvalidFlightDataError(Exception):
-    """Exception raised for errors in the input dataset.
-
-    Attributes:
-        line -- line that caused error
-    """
-
-    def __init__(self, line):
-        super().__init__(f'Missing or invalid value on line {line}.')
-
-
-def load_data(paths: list[str]) -> list[Flight]:
-    # TODO
-    return []
