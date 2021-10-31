@@ -33,27 +33,29 @@ def init_parser() -> argparse.ArgumentParser:
     parser.add_argument('destination', type=str,
                         help='Destination airport code.')
 
-    # TODO
     # Optional dynamic -> must be applied in search itself
-    parser.add_argument('--return', action='store_true', dest='return_requested',
+    parser.add_argument('--return', action='store_true', dest='return_trip',
                         required=False, help='Is it a return flight?')
+    # TODO
     parser.add_argument('--max-trip-price', type=int, required=False,
-                        help='Number representing maximal price of trip.')
-    parser.add_argument('--passengers', type=int, required=False,
-                        help='Number of passengers for trip.')
+                        help='Number representing maximal price of trip. If --return used, then price limit is applied to whole trip (including the flighs back).')
+    # TODO combine with return
     parser.add_argument('--max-stops', type=int, required=False,
-                        help='Maximal number of stops for trip. If return is specified, this number is also applied to return journey.')
+                        help='Maximal number of stops for oneway trip. If --return used, limit is also applied to return journey.')
+    # TODO combine with return
     parser.add_argument('--layover-limit', type=float, required=False, default=6.0,
                         help='Maximum hours spent in layover airport. Defaults to 6 hours (minimum is 1 hour).')
 
     # TODO
     # Optional static -> flights can be filtered before search
+
+    #done
     parser.add_argument('--bags', type=int, required=False, default=0,
                         help='Number of requested bags.')
     parser.add_argument('--exclude', action='extend', nargs='+', required=False,
                         help='Airports to exclude from trip.')
     parser.add_argument('--max-bag-price', type=int, required=False,
-                        help='Number representing maximal price for one bag in one flight for one passenger.')
+                        help='Number representing maximal price for one bag in one flight.')
     parser.add_argument('--days', action='extend', nargs='+', required=False, default=list(range(1, 8)),
                         help='Days in which you are willing to travel. Use 1-7 values to indicate day (1=Monday, 2=Tuesday ...).')
     parser.add_argument('--trip-start', required=False,

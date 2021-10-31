@@ -105,6 +105,10 @@ class SearchEngine:
 
     def construct_routes(self, flights: list[Flight]) -> None:
         '''Generate 'multigraph' of airports with possible flights.'''
+
+        # Filter flights based on static parameters
+        flights = self._filter_flights(flights)
+
         for flight in flights:
             origin = flight.origin
             dest = flight.destination
@@ -116,8 +120,14 @@ class SearchEngine:
             # Add flight from origin to destination
             self.graph[origin].add_flight(flight)
 
-        # TODO Filter flights based on static parameters
         self._sort_airport_flights()
+
+    def _filter_flights(self, flights: list[Flight]) -> list[Flight]:
+        bag_filter = lambda f: f.bags_allowed >= self.parameters['bags']
+        #TODO
+
+        all_filters = [bag_filter]
+        return [f for f in flights if all(cond(f) for cond in all_filters)]
 
     def _sort_airport_flights(self) -> None:
         '''Sort flights in ascending order to optimize trip search.'''
@@ -132,11 +142,14 @@ class SearchEngine:
 
         self.construct_routes(flights)
 
+        airport_code_info = f'Please also make sure that ariport code exists (e.g on https://www.iata.org/en/publications/directories/code-search/).'
         if origin not in self.graph:
-            print(f'There are no flights from {origin}')
+            print(f'There are no flights from {origin} for given search parameters.')
+            print(f'{airport_code_info}')
             return
         if destination not in self.graph:
-            print(f'There are no flights to {destination}')
+            print(f'There are no flights to {destination} for given search parameters.')
+            print(f'{airport_code_info}')
             return
 
         origin = self.graph[origin]
@@ -144,7 +157,7 @@ class SearchEngine:
         return self._search(origin, destination, [], [])
 
     def _search(self, origin: Airport, destination: Airport,
-                visited: list[Airport], path: list[Flight]) -> list[Trip]:
+                visited: list[Airport], path: list[Flight], is_return=False) -> list[Trip]:
         '''Private search method (recursive DFS).'''
 
         # Mark the origin airport as visited
@@ -154,7 +167,7 @@ class SearchEngine:
         for f in origin.flights:
 
             # Optimization of the search
-            optimization = self._optimize_search(path, f)
+            optimization = self._optimize_search(path, f, is_return)
             if optimization == SHOULD_TERMINATE_SEARCH:
                 return
             elif optimization == SHOULD_SKIP_FLIGHT:
@@ -166,19 +179,25 @@ class SearchEngine:
             # If current flight directly leads to destination
             # add path to all_paths and move to next flight
             if destination == flight_dest:
-                self.paths.append(path.copy())
-                path.pop()
-                continue
+
+                # If specified, search also for return part of trip
+                if self.parameters['return_trip'] and not is_return:
+                    self._search(
+                        flight_dest, self.graph[path[0].origin], [], path.copy(), True)
+                else:
+                    self.paths.append(path.copy())
+                    path.pop()
+                    continue
 
             # If current flight does not leads to destination search from flights destination
             airport_not_visited = flight_dest not in visited
             if airport_not_visited:
                 self._search(flight_dest, destination,
-                             visited.copy(), path.copy())
+                             visited.copy(), path.copy(), is_return)
 
             path.pop()
 
-    def _optimize_search(self, path, follow_up_flight):
+    def _optimize_search(self, path, next_flight, is_return):
         '''Check if graph search can be terminated early or some branches can be skipped.'''
 
         # cannot optimize without at least one previous flight
@@ -186,14 +205,22 @@ class SearchEngine:
             return NO_OPTIMIZATION_AVAILABLE
 
         # skip if can't be follow up of last flight
-        if not path[-1].not_time_travel(follow_up_flight):
+        if not path[-1].not_time_travel(next_flight):
             return SHOULD_SKIP_FLIGHT
 
-        # return if layover time is too big
-        # (can't get any better with ascending order of flights)
+        # return if layover is too long (can't get any better with ascending order of flights)
         layover_limit = self.parameters['layover_limit']
-        _, too_big = path[-1].assert_layover(follow_up_flight, layover_limit)
-        if too_big:
+
+        # check number of flights
+        if is_return:
+            pass
+            # TODO stops, split by destination airport and count
+            # TODO layover, split by destination and from index determine if first flight back and should skip layover rule
+        else:
+            too_many_stops = len(path) == self.parameters['max_stops']
+            _, layover_over_limit = path[-1].assert_layover(next_flight, layover_limit)
+
+        if layover_over_limit or too_many_stops:
             return SHOULD_TERMINATE_SEARCH
 
         return NO_OPTIMIZATION_AVAILABLE
@@ -207,4 +234,5 @@ class SearchEngine:
 
         trips = [Trip(origin, dest, flights, bags_count).to_JSON()
                  for flights in self.paths]
+        trips.sort(key=lambda k: k.total_price)
         return json.dumps(trips, indent=4)
