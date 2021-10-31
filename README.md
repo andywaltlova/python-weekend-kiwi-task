@@ -1,4 +1,4 @@
-# Trip search :airplane: :tropical_drink:
+# :airplane: Trip search  :baggage_claim:
 
             ______
             _\ _~-\___

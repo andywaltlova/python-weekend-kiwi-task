@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
 
 # Used to optimize search
@@ -14,27 +14,41 @@ class Flight:
         self.flight_no = flight_no
         self.origin = origin
         self.destination = destination
-        self.departure = datetime.strptime(
-            departure, '%Y-%m-%dT%H:%M:%S')
-        self.arrival = datetime.strptime(
-            arrival, '%Y-%m-%dT%H:%M:%S')
+        self.departure = datetime.strptime(departure, '%Y-%m-%dT%H:%M:%S')
+        self.arrival = datetime.strptime(arrival, '%Y-%m-%dT%H:%M:%S')
         self.duration = self.arrival - self.departure
         self.base_price = float(base_price)
         self.bag_price = float(bag_price)
         self.bags_allowed = int(bags_allowed)
 
+        self._attributes_are_valid()
+
     def __repr__(self) -> str:
-        return f'{self.flight_no} FROM:{self.origin}({self.departure}) TO:{self.destination}({self.arrival})'
+        return f'<{self.flight_no} FROM: {self.origin}({self.departure}) TO: {self.destination}({self.arrival})>'
 
     def __eq__(self, o: object) -> bool:
         same_number = self.flight_no == o.flight_no
         same_direction = self.destination == o.destination and self.origin == o.origin
         same_time = self.arrival == o.arrival and self.departure == o.departure
         return same_number and same_direction and same_time
+    
+    def __hash__(self) -> int:
+        return hash((self.flight_no, self.origin, self.destination, self.arrival, self.departure))
 
-    def not_time_travel(self, follow_up_flight: 'Flight') -> bool:
+    def _attributes_are_valid(self):
+        # Validation logic could be better with property and setters decorators
+        # to avoid changing attributes to invalid values after init is done.
+        msg = ''
+        if self.origin == self.destination:
+            msg = f'Origin ({self.origin}) cannot be same as destination ({self.destination}). Flight: {self}.'
+        if self.departure >= self.arrival:
+            msg = f'Departure time ({self.departure}) cannot be bigger than arrival time ({self.arrival}). Flight: {self}.'
+        if msg:
+            raise ValueError(msg)
+
+    def is_time_travel(self, follow_up_flight: 'Flight') -> bool:
         '''Used to validating flights in trip search.'''
-        return follow_up_flight.departure > self.arrival
+        return follow_up_flight.departure < self.arrival
 
     def assert_layover(self, follow_up_flight: 'Flight', max_layover: int) -> tuple[bool]:
         '''Determine if layover is too small or too big in compare to given limit.'''
@@ -90,8 +104,14 @@ class Airport:
         self.code = code
         self.flights = []
 
+    def __repr__(self) -> str:
+        return f'<{self.code}>'
+
     def __eq__(self, o: object) -> bool:
         return self.code == o.code
+    
+    def __hash__(self) -> int:
+        return hash(self.code)
 
     def add_flight(self, flight: Flight) -> None:
         self.flights.append(flight)
@@ -104,7 +124,10 @@ class SearchEngine:
         self.paths = []
 
     def construct_routes(self, flights: list[Flight]) -> None:
-        '''Generate 'multigraph' of airports with possible flights.'''
+        '''
+        Generate 'multigraph' of airports with possible flights.
+        Flights are sorted in ascending order for each airport.
+        '''
 
         # Filter flights based on static parameters
         flights = self._filter_flights(flights)
@@ -123,10 +146,36 @@ class SearchEngine:
         self._sort_airport_flights()
 
     def _filter_flights(self, flights: list[Flight]) -> list[Flight]:
+        '''
+        Static filtering of floghs based on optional parameters.
+        Flights are filtered before graph itself is constructed.
+        '''
         bag_filter = lambda f: f.bags_allowed >= self.parameters['bags']
-        #TODO
 
-        all_filters = [bag_filter]
+        exclude_airports = set(self.parameters['exclude'])
+        exclude_filter = lambda f: not set([f.origin, f.destination]).intersection(exclude_airports)
+
+        all_filters = [bag_filter, exclude_filter]
+
+        max_bag_price = self.parameters.get('max_bag_price')
+        if max_bag_price:
+            all_filters.append(lambda f: f.bag_price <= self.parameters['max_bag_price'])
+
+        trip_start = self.parameters.get('trip_start_time')
+        trip_end = self.parameters.get('trip_return_time')
+        if trip_end:
+            trip_end = datetime.strptime(trip_end, '%Y-%m-%dT%H:%M:%S')
+        if trip_start:
+            trip_start = datetime.strptime(trip_start, '%Y-%m-%dT%H:%M:%S')
+
+        return_time_limit = trip_end and self.parameters['return_trip']
+        if trip_start and return_time_limit:
+            all_filters.append(lambda f: f.arrival <= trip_end and f.departure >= trip_start)
+        elif trip_start:
+            all_filters.append(lambda f: f.departure >= trip_start)
+        elif return_time_limit:
+            all_filters.append(lambda f: f.arrival <= trip_end)
+
         return [f for f in flights if all(cond(f) for cond in all_filters)]
 
     def _sort_airport_flights(self) -> None:
@@ -134,7 +183,7 @@ class SearchEngine:
         for airport in self.graph.values():
             airport.flights.sort(key=lambda k: k.departure)
 
-    def search(self, flights, origin, destination) -> list[Trip]:
+    def search(self, flights, origin, destination) -> None:
         '''
         Public search method. Construct graph and filter flighs based on given
         parameters before calling recursive search.
@@ -157,9 +206,9 @@ class SearchEngine:
         return self._search(origin, destination, [], [])
 
     def _search(self, origin: Airport, destination: Airport,
-                visited: list[Airport], path: list[Flight], is_return=False) -> list[Trip]:
+                visited: list[Airport], path: list[Flight], is_return=False) -> None:
         '''Private search method (recursive DFS).'''
-
+        
         # Mark the origin airport as visited
         visited.append(origin)
 
@@ -180,44 +229,63 @@ class SearchEngine:
             # add path to all_paths and move to next flight
             if destination == flight_dest:
 
+                # TODO INFINITE LOOP IN example3.csv
                 # If specified, search also for return part of trip
                 if self.parameters['return_trip'] and not is_return:
-                    self._search(
-                        flight_dest, self.graph[path[0].origin], [], path.copy(), True)
+                    self._search(flight_dest, self.graph[path[0].origin], [], path.copy(), True)
                 else:
                     self.paths.append(path.copy())
-                    path.pop()
-                    continue
+                path.pop()
+                continue
 
-            # If current flight does not leads to destination search from flights destination
+            # If current flight does not leads to destination search from its destination
             airport_not_visited = flight_dest not in visited
             if airport_not_visited:
-                self._search(flight_dest, destination,
-                             visited.copy(), path.copy(), is_return)
+                self._search(flight_dest, destination, visited.copy(), path.copy(), is_return)
 
             path.pop()
 
-    def _optimize_search(self, path, next_flight, is_return):
-        '''Check if graph search can be terminated early or some branches can be skipped.'''
+    def _optimize_search(self, path, next_flight, is_return) -> int:
+        '''
+        Check if graph search can be terminated early or some branches can be skipped.
+        Optimizes based on:
+            flight cannot be follow up to last one
+            max trip price reached
+            layover limit is too big (flights are in ascending order)
+            max stops limit is reached
+        '''
 
         # cannot optimize without at least one previous flight
         if not path:
             return NO_OPTIMIZATION_AVAILABLE
 
         # skip if can't be follow up of last flight
-        if not path[-1].not_time_travel(next_flight):
+        if path[-1].is_time_travel(next_flight):
             return SHOULD_SKIP_FLIGHT
+
+        max_trip_price = self.parameters.get('max_trip_price')
+        if max_trip_price:
+            origin = self.parameters['origin']
+            dest = self.parameters['destination']
+            bags_count = self.parameters['bags']
+
+            trip = Trip(origin, dest, path, bags_count)
+            if trip.total_price >= max_trip_price:
+                return SHOULD_TERMINATE_SEARCH
 
         # return if layover is too long (can't get any better with ascending order of flights)
         layover_limit = self.parameters['layover_limit']
+        # terminate if too many flighs already in path
+        max_steps = self.parameters['max_stops']
 
-        # check number of flights
         if is_return:
             pass
             # TODO stops, split by destination airport and count
+            too_many_stops = False
             # TODO layover, split by destination and from index determine if first flight back and should skip layover rule
+            layover_over_limit = False
         else:
-            too_many_stops = len(path) == self.parameters['max_stops']
+            too_many_stops = len(path) == max_steps
             _, layover_over_limit = path[-1].assert_layover(next_flight, layover_limit)
 
         if layover_over_limit or too_many_stops:
