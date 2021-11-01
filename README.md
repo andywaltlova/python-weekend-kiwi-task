@@ -15,15 +15,19 @@ Task solution is in `trip_search` package:
 
 ```
 trip_search
-├── core.py
-└── helpers.py
+├── core.py # core classes (Flight, Trip, Airport, SearchEngine)
+└── utils.py # creation of parser, loading and validating of input data
 ```
 
-`solution.py` imports all neccesary functions, takes care of argument parsing, data loading and calling search itself. 
+`solution.py` in repository root imports all neccesary functions, takes care of argument parsing, data loading and calling search itself. 
 
-Solution is implemented as CLI with help of `argparse` module from standard library. For list of all possible arguments use `python3 solution.py --help`. 
+Solution is implemented as CLI with help of `argparse` from standard library. For list of all possible arguments use `python3 solution.py --help`. 
 
-Example search for return trip from WUE to JBN, where I want to spend 4 days and I don't want to fly through NNB or ZRW.
+Trip search logic is encapsulated in `SearchEngine` class, search itself is done with recursive DFS. Airports are representing nodes in graph, Flights are edges, for each airport sorted in ascending order. If optional arguments are specified, search is optimized accordingly -> e.g max stops allowed, layover time, trip price.
+
+### Example search
+
+Return trip from WUE to JBN, where I want to spend 4 days and I don't want to fly through NNB or ZRW:
 
 `python3 solution.py examples3.csv WUE JBN --return --days-in-destination 4 --exclude NNB ZRW`
 
