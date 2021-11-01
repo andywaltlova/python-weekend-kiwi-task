@@ -23,7 +23,7 @@ trip_search
 
 Solution is implemented as CLI with help of `argparse` from standard library. For list of all possible arguments use `python3 solution.py --help`. 
 
-Trip search logic is encapsulated in `SearchEngine` class, search itself is done with recursive DFS. Airports are representing nodes in graph, Flights are edges, for each airport sorted in ascending order. If optional arguments are specified, search is optimized accordingly -> e.g max stops allowed, layover time, trip price.
+Trip search logic is encapsulated in `SearchEngine` class, search itself is done with recursive DFS. Airports are representing nodes in graph, Flights are edges, for each airport sorted in ascending order. If optional arguments are specified, search is optimized accordingly -> e.g `max_stops` allowed, `layover_limit`, `max_trip_price`.
 
 ### Example search
 
