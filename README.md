@@ -1,4 +1,4 @@
-# :airplane: Trip search  :baggage_claim:
+# :christmas_tree: Trip search :airplane: :baggage_claim:
 
             ______
             _\ _~-\___
@@ -11,7 +11,17 @@
 
 ## How to run my solution?
 
-Solution is implemented as CLI with help of `argparse` module from standard library. For list of all possible arguments use `python3 solution.py --help`.
+Task solution is in `trip_search` package:
+
+```
+trip_search
+├── core.py
+└── helpers.py
+```
+
+`solution.py` imports all neccesary functions, takes care of argument parsing, data loading and calling search itself. 
+
+Solution is implemented as CLI with help of `argparse` module from standard library. For list of all possible arguments use `python3 solution.py --help`. 
 
 Example search for return trip from WUE to JBN, where I want to spend 4 days and I don't want to fly through NNB or ZRW.
 
@@ -19,7 +29,7 @@ Example search for return trip from WUE to JBN, where I want to spend 4 days and
 
 ### CLI help
 
-```bash
+```
 usage: solution.py [-h] [--return] [--max-stops MAX_STOPS]
                    [--days-in-destination DAYS_IN_DESTINATION]
                    [--max-trip-price MAX_TRIP_PRICE]
