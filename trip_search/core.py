@@ -206,7 +206,8 @@ class SearchEngine:
         return self._search(origin, destination, [], [])
 
     def _search(self, origin: Airport, destination: Airport,
-                visited: list[Airport], path: list[Flight], is_return=False) -> None:
+                visited: list[Airport], path: list[Flight], 
+                is_return=False, dest_index=None) -> None:
         '''Private search method (recursive DFS).'''
         
         # Mark the origin airport as visited
@@ -214,9 +215,8 @@ class SearchEngine:
 
         # Search through all flights from origin airport
         for f in origin.flights:
-
             # Optimization of the search
-            optimization = self._optimize_search(path, f, is_return)
+            optimization = self._optimize_search(path, f, is_return, dest_index)
             if optimization == SHOULD_TERMINATE_SEARCH:
                 return
             elif optimization == SHOULD_SKIP_FLIGHT:
@@ -226,26 +226,29 @@ class SearchEngine:
             path.append(f)
 
             # If current flight directly leads to destination
-            # add path to all_paths and move to next flight
             if destination == flight_dest:
-
-                # TODO INFINITE LOOP IN example3.csv
                 # If specified, search also for return part of trip
                 if self.parameters['return_trip'] and not is_return:
-                    self._search(flight_dest, self.graph[path[0].origin], [], path.copy(), True)
+                    # Index of flight reaching destination
+                    dest_index = len(path) - 1
+                    origin = self.graph[path[0].origin]
+                    self._search(flight_dest, origin, 
+                                 [], path.copy(), 
+                                 is_return=True, dest_index=dest_index)
                 else:
                     self.paths.append(path.copy())
                 path.pop()
                 continue
 
             # If current flight does not leads to destination search from its destination
-            airport_not_visited = flight_dest not in visited
-            if airport_not_visited:
-                self._search(flight_dest, destination, visited.copy(), path.copy(), is_return)
+            if flight_dest not in visited:
+                self._search(flight_dest, destination, 
+                             visited.copy(), path.copy(), 
+                             is_return, dest_index)
 
             path.pop()
 
-    def _optimize_search(self, path, next_flight, is_return) -> int:
+    def _optimize_search(self, path, next_flight, is_return, dest_index) -> int:
         '''
         Check if graph search can be terminated early or some branches can be skipped.
         Optimizes based on:
@@ -278,12 +281,20 @@ class SearchEngine:
         # terminate if too many flighs already in path
         max_steps = self.parameters['max_stops']
 
-        if is_return:
-            pass
-            # TODO stops, split by destination airport and count
-            too_many_stops = False
-            # TODO layover, split by destination and from index determine if first flight back and should skip layover rule
-            layover_over_limit = False
+        layover_over_limit, too_many_stops = False, False
+        if is_return and path[dest_index] == path[-1]:
+            # First return flight
+            days_in_dest = timedelta(days=self.parameters.get('days_in_destination'))
+            flight_to_dest = path[-1].arrival
+            return_flight = next_flight.departure
+            if return_flight - flight_to_dest <= days_in_dest:
+                return SHOULD_SKIP_FLIGHT
+
+        elif is_return and not path[dest_index] == path[-1]:
+            # Return flights (except the first)
+            too_many_stops = len(path[dest_index:]) == max_steps
+            _, layover_over_limit = path[-1].assert_layover(next_flight, layover_limit)
+
         else:
             too_many_stops = len(path) == max_steps
             _, layover_over_limit = path[-1].assert_layover(next_flight, layover_limit)
@@ -302,5 +313,5 @@ class SearchEngine:
 
         trips = [Trip(origin, dest, flights, bags_count).to_JSON()
                  for flights in self.paths]
-        trips.sort(key=lambda k: k.total_price)
+        trips.sort(key=lambda k: k['total_price'])
         return json.dumps(trips, indent=4)

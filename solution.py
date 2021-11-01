@@ -11,6 +11,5 @@ if __name__ == '__main__':
 
     flights = load_data(args.data)
     engine.search(flights, args.origin, args.destination)
-    [print(t) for t in engine.paths]
-    
-    # print(engine.get_output())
+
+    print(engine.get_output())
