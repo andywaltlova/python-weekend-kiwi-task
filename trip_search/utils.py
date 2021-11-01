@@ -7,7 +7,6 @@ from datetime import datetime
 
 def load_data(paths: list[str]) -> list[Flight]:
     '''Load flights from csv files.'''
-
     result = []
     for path in paths:
         result += load_one_file(path)
