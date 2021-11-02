@@ -1,5 +1,5 @@
 from trip_search.core import SearchEngine
-from trip_search.utils import load_data,validate_args, init_parser
+from trip_search.utils import load_data, validate_args, init_parser
 
 
 if __name__ == '__main__':

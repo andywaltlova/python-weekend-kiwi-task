@@ -41,7 +41,7 @@ def validate_args(args: argparse.Namespace) -> None:
     except ValueError as error:
         print(f'[ERROR] Invalid format of datetime arguments: {error}.')
         exit(1)
-    
+
 def init_parser() -> argparse.ArgumentParser:
     '''Initialize simple CLI for inputting parameters for trip search.'''
 
@@ -53,9 +53,9 @@ def init_parser() -> argparse.ArgumentParser:
     parser.add_argument('destination', type=str, help='Destination airport code.')
 
     # Optional dynamic -> must be applied during search
-    parser.add_argument('--return', action='store_true', dest='return_trip', required=False, 
+    parser.add_argument('--return', action='store_true', dest='return_trip', required=False,
                         help='Is it a return flight?')
-    parser.add_argument('--max-stops', type=int, required=False, 
+    parser.add_argument('--max-stops', type=int, required=False,
                         help='Maximum number of stops for oneway trip. If --return used, limit is also applied to return journey.')
     parser.add_argument('--days-in-destination', type=int, required=False, default=-1,
                         help='Applicable only with --return. Indicates how many days should be between arrival to destination and return flight.')
@@ -63,13 +63,13 @@ def init_parser() -> argparse.ArgumentParser:
                         help='Number representing maximum trip price. If --return used, then price limit is applied to whole trip (including the flighs back).')
     parser.add_argument('--layover-limit', type=float, required=False, default=6.0,
                         help='Maximum hours spent in layover. Defaults to 6 hours (minimum is 1 hour).')
-    
+
     # Optional static -> flights can be filtered before search
-    parser.add_argument('--bags', type=int, required=False, default=0, 
+    parser.add_argument('--bags', type=int, required=False, default=0,
                         help='Number of requested bags.')
-    parser.add_argument('--max-bag-price', type=int, required=False, 
+    parser.add_argument('--max-bag-price', type=int, required=False,
                         help='Number representing maximum price for one bag in one flight.')
-    
+
     input_format = 'Input must be in datetime format -> 2021-09-09T20:10:00'
     parser.add_argument('--trip-start-time', required=False,
                         help=f'Earliest datetime for departure from origin airport. {input_format}.')

@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta
 
 
-# Used to optimize search
+# Constants returned in search optimization
 NO_OPTIMIZATION_AVAILABLE = 0
 SHOULD_SKIP_FLIGHT = 1
 SHOULD_TERMINATE_SEARCH = -1
@@ -20,7 +20,7 @@ class Flight:
         self.bag_price = float(bag_price)
         self.bags_allowed = int(bags_allowed)
 
-        self._attributes_are_valid()
+        self.__attributes_are_valid()
 
     def __repr__(self) -> str:
         return f'<{self.flight_no} FROM: {self.origin}({self.departure}) TO: {self.destination}({self.arrival})>'
@@ -30,11 +30,11 @@ class Flight:
         same_direction = self.destination == o.destination and self.origin == o.origin
         same_time = self.arrival == o.arrival and self.departure == o.departure
         return same_number and same_direction and same_time
-    
+
     def __hash__(self) -> int:
         return hash((self.flight_no, self.origin, self.destination, self.arrival, self.departure))
 
-    def _attributes_are_valid(self) -> None:
+    def __attributes_are_valid(self) -> None:
         # Validation logic could be better with property and setters decorators
         # to avoid changing attributes to invalid values after init is done.
         msg = ''
@@ -71,24 +71,26 @@ class Flight:
 
 
 class Trip:
+    '''Takes sequence of flights and converts them to Trip format.'''
+
     def __init__(self, origin: str, destination: str, flights: list[Flight], bags_count=0) -> None:
         self.flights = [f.to_JSON() for f in flights]
         self.origin = origin
         self.destination = destination
-        self.bags_allowed = self._get_allowed_bags(flights)
+        self.bags_allowed = self.__get_allowed_bags(flights)
         self.bags_count = bags_count
-        self.total_price = self._calculate_trip_price(flights)
-        self.travel_time = str(self._calculate_travel_time(flights))
+        self.total_price = self.__calculate_trip_price(flights)
+        self.travel_time = str(self.__calculate_travel_time(flights))
 
-    def _get_allowed_bags(self, flights: list[Flight]) -> int:
+    def __get_allowed_bags(self, flights: list[Flight]) -> int:
         return min([f.bags_allowed for f in flights])
 
-    def _calculate_trip_price(self, flights: list[Flight]) -> float:
+    def __calculate_trip_price(self, flights: list[Flight]) -> float:
         flights_price = sum([f.base_price for f in flights])
         bags_price = sum([f.bag_price*self.bags_count for f in flights])
         return flights_price + bags_price
 
-    def _calculate_travel_time(self, flights: list[Flight]) -> timedelta:
+    def __calculate_travel_time(self, flights: list[Flight]) -> timedelta:
         return sum([f.arrival - f.departure for f in flights], timedelta())
 
     def to_JSON(self) -> str:
@@ -107,7 +109,7 @@ class Airport:
 
     def __eq__(self, o: object) -> bool:
         return self.code == o.code
-    
+
     def __hash__(self) -> int:
         return hash(self.code)
 
@@ -116,19 +118,25 @@ class Airport:
 
 
 class SearchEngine:
-    def __init__(self, parameters) -> None:
+    '''
+    Initialized with search parameters. Class has only one two ublic methods.
+    `search`, which takes flights from input, constructs graph and searches for trips 
+    based on search parameters.
+    `get_output` which takes found trips and prints them to output in JSON format.
+    '''
+    def __init__(self, parameters: dict[str, str]) -> None:
         self.parameters = parameters
         self.graph = {}
         self.paths = []
 
-    def construct_routes(self, flights: list[Flight]) -> None:
+    def __construct_routes(self, flights: list[Flight]) -> None:
         '''
         Generate 'multigraph' of airports with possible flights.
         Flights are sorted in ascending order for each airport.
         '''
 
         # Filter flights based on static parameters
-        flights = self._filter_flights(flights)
+        flights = self.__filter_flights(flights)
 
         for flight in flights:
             origin = flight.origin
@@ -141,9 +149,9 @@ class SearchEngine:
             # Add flight from origin to destination
             self.graph[origin].add_flight(flight)
 
-        self._sort_airport_flights()
+        self.__sort_airport_flights()
 
-    def _filter_flights(self, flights: list[Flight]) -> list[Flight]:
+    def __filter_flights(self, flights: list[Flight]) -> list[Flight]:
         '''
         Static filtering of flights based on optional parameters.
         Flights are filtered before graph itself is constructed.
@@ -176,44 +184,44 @@ class SearchEngine:
 
         return [f for f in flights if all(cond(f) for cond in all_filters)]
 
-    def _sort_airport_flights(self) -> None:
+    def __sort_airport_flights(self) -> None:
         '''Sort flights in ascending order to optimize trip search.'''
         for airport in self.graph.values():
             airport.flights.sort(key=lambda k: k.departure)
 
-    def search(self, flights, origin, destination) -> None:
+    def search(self, flights: list[Flight], origin: str, destination: str) -> None:
         '''
         Public search method. Construct graph and filter flighs based on given
         parameters before calling recursive search.
         '''
 
-        self.construct_routes(flights)
+        self.__construct_routes(flights)
 
-        airport_code_info = f'Please also make sure that ariport code exists (e.g on https://www.iata.org/en/publications/directories/code-search/).'
+        airport_code_info = f'Please also make sure that airport code exists (e.g on https://www.iata.org/en/publications/directories/code-search/).'
         if origin not in self.graph:
             print(f'There are no flights from {origin} for given search parameters.')
             print(f'{airport_code_info}')
-            return
+            exit()
         if destination not in self.graph:
             print(f'There are no flights to {destination} for given search parameters.')
             print(f'{airport_code_info}')
-            return
+            exit()
 
         origin = self.graph[origin]
         destination = self.graph[destination]
-        return self._search(origin, destination, [], [])
+        return self.__search(origin, destination, [], [])
 
-    def _search(self, origin: Airport, destination: Airport,
-                visited: list[Airport], path: list[Flight], 
+    def __search(self, origin: Airport, destination: Airport,
+                visited: list[Airport], path: list[Flight],
                 is_return=False, dest_index=None) -> None:
         '''Private search method (recursive DFS).'''
-        
+
         # Mark the origin airport as visited
         visited.append(origin)
 
         # Search through all flights from origin airport
         for f in origin.flights:
-            optimization = self._optimize_search(path, f, is_return, dest_index)
+            optimization = self.__optimize_search(path, f, is_return, dest_index)
             if optimization == SHOULD_TERMINATE_SEARCH:
                 return
             elif optimization == SHOULD_SKIP_FLIGHT:
@@ -229,7 +237,7 @@ class SearchEngine:
                     # Index of flight reaching destination
                     dest_index = len(path) - 1
                     origin = self.graph[path[0].origin]
-                    self._search(flight_dest, origin, 
+                    self.__search(flight_dest, origin, 
                                  [], path.copy(), 
                                  is_return=True, dest_index=dest_index)
                 else:
@@ -239,17 +247,17 @@ class SearchEngine:
 
             # If current flight does not leads to destination search from its destination
             if flight_dest not in visited:
-                self._search(flight_dest, destination, 
+                self.__search(flight_dest, destination, 
                              visited.copy(), path.copy(), 
                              is_return, dest_index)
 
             path.pop()
 
-    def _optimize_search(self, path: list[Flight], next_flight: Flight, 
+    def __optimize_search(self, path: list[Flight], next_flight: Flight,
                          is_return: bool, dest_index: int) -> int:
         '''
         Check if graph search can be terminated early or some branches can be skipped.
-        Optimizes based on:
+        Optimization based on:
             flight cannot be follow up to last one
             max_trip_price reached
             layover_limit is too big (flights are in ascending order)
