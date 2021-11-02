@@ -168,7 +168,7 @@ class SearchEngine:
             all_filters.append(lambda f: f.bag_price <= self.parameters['max_bag_price'])
 
         trip_start = self.parameters.get('trip_start_time')
-        trip_end = self.parameters.get('trip_return_time')
+        trip_end = self.parameters.get('trip_end_time')
         if trip_end:
             trip_end = datetime.strptime(trip_end, '%Y-%m-%dT%H:%M:%S')
         if trip_start:
@@ -308,9 +308,10 @@ class SearchEngine:
 
         return NO_OPTIMIZATION_AVAILABLE
 
-    def get_output(self) -> str:
-        '''Convert all paths to Trips and exports them as JSON.'''
-
+    def get_output(self) -> None:
+        '''
+        Convert all paths to Trips and export them as JSON to sys.stdout.
+        '''
         origin = self.parameters['origin']
         dest = self.parameters['destination']
         bags_count = self.parameters['bags']
@@ -318,4 +319,5 @@ class SearchEngine:
         trips = [Trip(origin, dest, flights, bags_count).to_JSON()
                  for flights in self.paths]
         trips.sort(key=lambda k: k['total_price'])
-        return json.dumps(trips, indent=4)
+
+        print(json.dumps(trips, indent=4))

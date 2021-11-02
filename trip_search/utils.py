@@ -16,8 +16,14 @@ def load_one_file(path) -> list[Flight]:
     with open(path, newline='') as file:
         reader = csv.DictReader(file)
         try:
-            return [Flight(**row) for row in reader]
-        except ValueError as error:
+            first_row = next(reader)
+            if None in first_row:
+                print(f'[ERROR] Missing column header in input file `{path}`.')
+                exit(1)
+
+            return [Flight(**first_row)] + [Flight(**row) for row in reader]
+
+        except (ValueError, TypeError) as error:
             print(
                 f'[ERROR] Missing or invalid value in source file `{path}`.')
             print(f'  -> {error}')
@@ -29,7 +35,7 @@ def validate_args(args: argparse.Namespace) -> None:
         exit(1)
 
     trip_start = args.trip_start_time
-    trip_end = args.trip_return_time
+    trip_end = args.trip_end_time
     try:
         if trip_start:
             trip_start = datetime.strptime(trip_start, '%Y-%m-%dT%H:%M:%S')
@@ -53,7 +59,7 @@ def init_parser() -> argparse.ArgumentParser:
     parser.add_argument('destination', type=str, help='Destination airport code.')
 
     # Optional dynamic -> must be applied during search
-    parser.add_argument('--return', action='store_true', dest='return_trip', required=False,
+    parser.add_argument('-r', '--return', action='store_true', dest='return_trip', required=False,
                         help='Is it a return flight?')
     parser.add_argument('--max-stops', type=int, required=False,
                         help='Maximum number of stops for oneway trip. If --return used, limit is also applied to return journey.')
@@ -74,7 +80,7 @@ def init_parser() -> argparse.ArgumentParser:
     parser.add_argument('--trip-start-time', required=False,
                         help=f'Earliest datetime for departure from origin airport. {input_format}.')
     ignore_if_oneway = 'This parameter works only in combination with --return option.'
-    parser.add_argument('--trip-return-time', required=False,
+    parser.add_argument('--trip-end-time', required=False,
                         help=f'Earliest datime for departure from destination airport. {input_format} {ignore_if_oneway}')
 
     parser.add_argument('--exclude', action='extend', nargs='+', default=[], required=False,

@@ -7,9 +7,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     validate_args(args)
 
-    engine = SearchEngine(parameters=vars(args))
-
     flights = load_data(args.data)
-    engine.search(flights, args.origin, args.destination)
 
-    print(engine.get_output())
+    engine = SearchEngine(parameters=vars(args))
+    engine.search(flights, args.origin, args.destination)
+    engine.get_output()
