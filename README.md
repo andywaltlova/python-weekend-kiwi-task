@@ -34,13 +34,13 @@ Return trip from WUE to JBN, where I want to spend 4 days and I don't want to fl
 ### CLI help
 
 ```
-usage: solution.py [-h] [--return] [--max-stops MAX_STOPS]
+usage: solution.py [-h] [-r] [--max-stops MAX_STOPS]
                    [--days-in-destination DAYS_IN_DESTINATION]
                    [--max-trip-price MAX_TRIP_PRICE]
                    [--layover-limit LAYOVER_LIMIT] [--bags BAGS]
                    [--max-bag-price MAX_BAG_PRICE]
                    [--trip-start-time TRIP_START_TIME]
-                   [--trip-return-time TRIP_RETURN_TIME]
+                   [--trip-end-time TRIP_END_TIME]
                    [--exclude EXCLUDE [EXCLUDE ...]]
                    data [data ...] origin destination
 
@@ -54,7 +54,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --return              Is it a return flight?
+  -r, --return          Is it a return flight?
   --max-stops MAX_STOPS
                         Maximum number of stops for oneway trip. If --return
                         used, limit is also applied to return journey.
@@ -77,7 +77,7 @@ optional arguments:
                         Earliest datetime for departure from origin airport.
                         Input must be in datetime format ->
                         2021-09-09T20:10:00.
-  --trip-return-time TRIP_RETURN_TIME
+  --trip-end-time TRIP_END_TIME
                         Earliest datime for departure from destination
                         airport. Input must be in datetime format ->
                         2021-09-09T20:10:00 This parameter works only in
